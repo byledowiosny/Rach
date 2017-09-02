@@ -1,0 +1,63 @@
+#!/bin/perl
+system "rm remise.aux remise.dvi remise.log remise.tex";
+$i = 0; $n = 0;
+	do {
+	print "Emetteur: ";
+	$emetteur[$i] = <stdin>;
+	print "Banque: ";
+	$banque[$i] = <stdin>;
+	print "Montant: ";
+	$montant[$i] = <stdin>;
+	$i++;
+	$n++;
+	print "Un autre chèque ?: ";
+	$autre = <stdin>;
+	}
+	while ($autre =~ /^o/i);
+$nb = $n;
+$nr = int(rand(365));
+open (F, '> remise.tex') || die "Pb d'ouverture: $!";
+print F "\\documentclass{letter}\n
+	\\usepackage[french]{babel}\n
+	\\signature{GT}\n
+	\\address{Georges Tomaka\\\\Compte Nr: 24025100000}\n
+	\\begin{document}\n
+	\\begin{letter}{CA\\\\\\\\Maussane les Alpilles}\n
+	\\opening{Remise Nr: $nr}\n\n
+	
+	\\begin{tabular}{|l|l|r|}\n
+	\\hline\n
+	Emetteur & Banque & Montant\\\\\n
+	\\hline\n";
+$i = 0; $m = 0; $total = 0;
+	do {
+	$e = $emetteur[$i];
+	$b = $banque[$i];
+	$m = $montant[$i];
+	$total = $total + $m; 
+	$i++;
+	$n--;
+	print F "$e & $b & "; printf F ("%.2f", $m); print F " FRF\\\\\n";
+	} while ($n != 0);
+print F "\\hline\n
+	\\end{tabular}\n\n
+	
+	\\begin{tabular}{|r|r|}\n
+	\\hline\n
+	Nb de ch\\`eques & Total\\\\\n
+	\\hline\n
+$nb & "; printf F ("%.2f", $total); print F " FRF\\\\\n";
+print F "\\hline\n
+	\\end{tabular}\n\n";
+
+print F "\\closing{SD}\n
+	\\end{letter}\n
+	\\end{document}";
+close F;
+print "Traiter la remise - 1; Abandonner - 2: ";
+$trait = <stdin>;
+	if ($trait == 1) {
+	system "latex remise.tex";
+	system "lpr -#2 remise.dvi";
+	}
+

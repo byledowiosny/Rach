@@ -1,0 +1,149 @@
+#!/bin/perl
+do {
+system "rm facture.aux facture.dvi facture.log facture.tex";
+print "Facture H.T. - 1; Facture T.T.C. - 2: ";
+$ht_ou_ttc = <stdin>;
+	if ($ht_ou_ttc == 2) {
+	print "Nom du client: ";
+	}
+	else {
+	print "Société cliente: "
+	}
+$nom = <stdin>;
+print "Son adresse: ";
+$adresse = <stdin>;
+print "Code postal: ";
+$cp = <stdin>;
+print "Ville: ";
+$ville = <stdin>;
+$i = 0;
+$n = 0;
+	do {
+	print "Article: ";
+	$article[$i] = <stdin>;
+	print "Son prix: ";
+	$prix[$i] = <stdin>;
+	print "T.V.A. 5.5 - 1; T.V.A. 19.6 - 2; T.V.A. 0 - 3: ";
+	$taux = <stdin>;
+		if ($taux == 1) {
+		$tva[$i] = 5.5;
+		} elsif ($taux == 2) {
+		$tva[$i] = 19.6;
+		} else {
+		$tva[$i] = 0;
+		}
+	print "Quantité à facturer: ";
+	$quantite[$i] = <stdin>;
+	$i++;
+	$n++;
+	print "Un autre article ?: ";
+	$autre_article = <stdin>;
+	}
+	while ($autre_article =~ /^o/i);
+$port = 0; $tport = 0; $tvaport = 0;
+print "Prix de port T.T.C.: ";
+$port = <stdin>;
+	if ($port != 0) {
+	print "Poste - 1; Transporteur - 2: ";
+	$mode = <stdin>;
+		if ($mode == 1) {
+		$tport = 0;
+		$tvaport = 0;
+		} else {
+		$tport = 19.6;
+		$tvaport = $port - $port/1.196;
+		}
+	}
+print "Commentaire: ";
+$commentaire = <stdin>;
+$nr = int(rand(365));
+open (F, '> facture.tex') || die "Pb d'ouverture: $!";
+print F "\\documentclass{letter}\n
+	\\usepackage[french]{babel}\n
+	\\signature{$commentaire}\n
+	\\address{Laurier Tomaka\\\\Mas de l'Aiguillon\\\\F-13520 Maussane les Alpilles\\\\(0)4 90 54 30 41\\\\georges.tomaka\@wanadoo.fr}\n
+	\\begin{document}\n
+	\\begin{letter}{$nom\\\\$adresse\\\\$cp $ville}\n
+	\\opening{Facture Nr: $nr}\n\n
+	
+	\\begin{tabular}{|l|r|r|r|r|}\n
+	\\hline\n
+	Article & Quantit\\'e & Prix & Montant & T.V.A.\\\\\n
+	\\hline\n";
+$i = 0; $m = 0; $t = 0;
+$total55 = 0; $total206 = 0; $total0 = 0;
+$tva55 = 0; $tva206 = 0; 
+	do {
+	$a = $article[$i];
+	$q = $quantite[$i];
+	$p = $prix[$i];
+	$m = $quantite[$i] * $prix[$i];
+	$t = $tva[$i];
+		if ($t == 5.5) {
+		$total55 = $total55 + $m;
+			if ($ht_ou_ttc == 1) {
+			$tva55 = $tva55 + $m*0.055;
+			} else {
+			$tva55 = $tva55 + ($m - $m/1.055);
+			}
+		} if ($t == 19.6) {
+		$total206 = $total206 + $m;
+			if ($ht_ou_ttc == 1) {
+			$tva206 = $tva206 + $m*0.196;
+			} else {
+			$tva206 = $tva206 + ($m - $m/1.196);
+			}
+		} if ($t == 0) {
+		$total0 = $total0 + $m;
+		} 
+	$i++;
+	$n--;
+	print F "$a & $q & $p & $m & $t \\%\\\\\n";
+	} while ($n != 0);
+print F "\\hline\n
+	\\end{tabular}\n\n
+	
+	\\begin{tabular}{|r|r|r|}\n
+	\\hline\n
+	Total & T.V.A. & T.V.A.\\\\\n
+	\\hline\n";
+		if ($total55 != 0) {
+		print F "$total55 & 5.5 \\% & "; printf F ("%.2f", $tva55); print F " Euros\\\\\n";
+		} if ($total206 != 0) {
+		print F "$total206 & 19.6 \\% & "; printf F ("%.2f", $tva206); print F " Euros\\\\\n";
+		} if ($total0 != 0) {
+		print F "$total0 & 0 \\% & 0 Euros\\\\\n";
+		}
+print F "\\hline\n
+	\\end{tabular}\n\n";
+	
+		if ($port != 0) {		
+		print F "\\begin{tabular}{|r|r|r|}\n
+			\\hline\n
+			Port & T.V.A. & T.V.A.\\\\\n
+			\\hline\n
+			$port & $tport \\% & "; printf F ("%.2f", $tvaport); print F " Euros\\\\\n
+			\\hline\n
+			\\end{tabular}\n\n";
+		}
+$net = 0;
+	if ($ht_ou_ttc == 1) {
+	$net = $total55 + $tva55 + $total206 + $tva206 + $total0 + $port;
+	} else {
+	$net = $total55 + $total206 + $total0 + $port;
+	}
+print F "\\closing{Net \\`a payer: "; printf F ("%.2f", $net); print F " Euros}\n
+	\\end{letter}\n
+	\\end{document}";
+close F;
+print "Traiter la facture - 1; Abandonner - 2: ";
+$trait = <stdin>;
+	if ($trait == 1) {
+	system "latex facture.tex";
+	system "lpr -#2 facture.dvi";
+	}
+print "Une autre facture ?: ";
+$autre = <stdin>;
+}
+while ($autre =~ /^o/i);
+
